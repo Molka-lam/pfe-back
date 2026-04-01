@@ -1,0 +1,11 @@
+import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../../middlewares/authenticate";
+export declare const getAllLicenses: (req: Request, res: Response) => Promise<void>;
+export declare const createLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getLicenseById: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const revokeLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const suspendLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deleteLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getMyLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const validateLicense: (req: AuthenticatedRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
