@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  email        String        @unique
+  company      String?
+  phone        String?
+  address      String?
+  status       String        @default("active") // active | suspended
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  users        User[]
+  licenses     License[]
+  usage_logs   UsageLog[]
+  renewal_requests RenewalRequest[]
+
+  @@map("tenants")
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenant_id      String   @db.Uuid
+  name           String
+  email          String   @unique
+  password_hash  String
+  role           String   @default("client") // admin | client
+  refresh_token  String?
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  tenant         Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id])
+  @@map("users")
+}
+
+model License {
+  id           String         @id @default(uuid()) @db.Uuid
+  tenant_id    String         @db.Uuid
+  license_key  String         @unique
+  plan         String         // BASIC | PRO | ENTERPRISE
+  status       String         @default("active") // active | suspended | expired
+  expires_at   DateTime
+  features     Json           // { advanced_ai, export_pdf, multi_user, api_access }
+  limits       Json           // { max_users, api_calls_per_month, storage_gb }
+  notes        String?
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+
+  tenant       Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  audits       LicenseAudit[]
+  renewal_requests RenewalRequest[]
+
+  @@index([tenant_id, status, expires_at])
+  @@map("licenses")
+}
+
+model Plan {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @unique // BASIC | PRO | ENTERPRISE
+  price_monthly   Float
+  features        Json
+  limits          Json
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("plans")
+}
+
+model UsageLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenant_id   String   @db.Uuid
+  api_calls   Int      @default(0)
+  storage_gb  Float    @default(0)
+  created_at  DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, created_at])
+  @@map("usage_logs")
+}
+
+model LicenseAudit {
+  id           String   @id @default(uuid()) @db.Uuid
+  license_id   String   @db.Uuid
+  action       String   // created | activated | suspended | revoked | renewed
+  performed_by String   @db.Uuid
+  old_status   String?
+  new_status   String?
+  metadata     Json?
+  created_at   DateTime @default(now())
+
+  license      License  @relation(fields: [license_id], references: [id], onDelete: Cascade)
+
+  @@index([license_id])
+  @@map("license_audits")
+}
+
+model RenewalRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  license_id  String   @db.Uuid
+  tenant_id   String   @db.Uuid
+  message     String?
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  license     License  @relation(fields: [license_id], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, status])
+  @@map("renewal_requests")
+}
